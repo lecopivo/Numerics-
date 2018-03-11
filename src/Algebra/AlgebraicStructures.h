@@ -20,46 +20,67 @@ namespace Algebra {
 //     &&         has_operation<basic_assignment_t, T, OperationType<T, T>>;
 
 template <typename T, template <typename...> typename OperationType,
-          bool Diagnose = false>
+          bool Force = false>
 constexpr bool is_magma = []() {
 
   if constexpr (has_operation<OperationType, T, T>) {
     if constexpr (has_operation<basic_assignment_t, T &, OperationType<T, T>>) {
       return true;
     } else {
-      static_assert(!Diagnose,
+      static_assert(!Force,
                     "The type is not closed under the given operation!");
     }
   } else {
-    static_assert(!Diagnose, "The type does not have the required operation!");
+    static_assert(!Force, "The type does not have the required operation!");
   }
   return false;
 }();
 
 // Monoid
 template <typename T, template <typename...> typename OperationType,
-          bool Diagnose = false>
+          bool Force = false>
 constexpr bool is_monoid = []() {
-  if constexpr (is_magma<T, OperationType, Diagnose>)
-    if constexpr (has_unit<T, OperationType, Diagnose>)
+  if constexpr (is_magma<T, OperationType, Force>)
+    if constexpr (has_unit<T, OperationType, Force>)
       return true;
   return false;
 }();
 
 // Group
 template <typename T, template <typename...> typename OperationType,
-          bool Diagnose = false>
+          bool Force = false>
 constexpr bool is_group = []() {
-  if constexpr (is_monoid<T, OperationType, Diagnose>) {
+  if constexpr (is_monoid<T, OperationType, Force>) {
     if constexpr (has_inverse<T, OperationType>) {
       return true;
     } else {
-      static_assert(!Diagnose,
+      static_assert(!Force,
                     "The type and operation does not define inverse! "
                     "Please see documentation how to define an inverse "
                     "for a type and operation.");
     }
   }
+  return false;
+}();
+
+// Special types
+template <typename T, bool Force = false>
+constexpr bool is_abelian_group = []() {
+  if constexpr (is_group<T, addition_t, Force>)
+    if constexpr /* x+=y */ (has_operation<addition_assignment_t, T &, T>)
+      if constexpr /* x-=y */ (has_operation<subtraction_assignment_t, T &, T>)
+        if constexpr /* -x */ (has_operation<unary_minus_t, T>)
+          // if constexpr /* +x */ (has_operation<unary_plus_t, T>)
+          return true;
+  return false;
+}();
+
+template <typename T, bool Force = false>
+constexpr bool is_multiplicative_group = []() {
+  if constexpr (is_group<T, multiplication_t, Force>)
+    if constexpr /* x*=y */ (has_operation<multiplication_assignment_t, T &, T>)
+      // if constexpr /* +x */ (has_operation<unary_plus_t, T>)
+      return true;
   return false;
 }();
 

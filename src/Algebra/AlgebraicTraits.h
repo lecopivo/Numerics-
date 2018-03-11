@@ -116,7 +116,13 @@ auto zero = []() {
 }();
 
 template <typename T>
-auto one = algebraic_traits<T, multiplication_t>::unit;
+auto one = []() {
+  if constexpr (has_unit<T, multiplication_t, true>) {
+    return algebraic_traits<T, multiplication_t>::unit;
+  } else {
+    return;
+  }
+}();
 
 } // namespace Algebra
 } // namespace Numerics

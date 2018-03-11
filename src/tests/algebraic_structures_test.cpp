@@ -51,6 +51,25 @@ void group_check(std::string operation_name = "") {
   }
 }
 
+template <typename T>
+void abelian_group_check() {
+  if constexpr (is_abelian_group<T>) {
+    std::cout << typeid(T).name() << " is abelian group." << std::endl;
+  } else {
+    std::cout << typeid(T).name() << " is not abelian group." << std::endl;
+  }
+}
+
+template <typename T>
+void multiplicative_group_check() {
+  if constexpr (is_multiplicative_group<T>) {
+    std::cout << typeid(T).name() << " is multiplicative group." << std::endl;
+  } else {
+    std::cout << typeid(T).name() << " is not multiplicative group."
+              << std::endl;
+  }
+}
+
 template <typename T, template <typename...> typename OperationType>
 void structure_check(std::string operation_name = "") {
   magma_check<T, OperationType>(operation_name);
@@ -58,63 +77,30 @@ void structure_check(std::string operation_name = "") {
   group_check<T, OperationType>(operation_name);
 }
 
-template <>
-struct algebraic_traits<Eigen::Vector2f, addition_t> {
-  static const Eigen::Vector2f unit;
+template <class... T>
+void test_types() {
 
-  static auto inverse(Eigen::Vector2f const &x) { return -x; }
+  Utils::static_for<0, sizeof...(T)>([](auto I) {
+    using type = Utils::get_type<I.value, T...>;
+
+    std::cout << std::endl;
+
+    structure_check<type, addition_t>("addition");
+    structure_check<type, multiplication_t>("multiplicative");
+    abelian_group_check<type>();
+    multiplicative_group_check<type>();
+    std::cout << "Zero is: " << std::endl << zero<type> << std::endl;
+
+    if constexpr (is_multiplicative_group<type>) {
+      std::cout << "One is: " << std::endl << one<type> << std::endl;
+    }
+
+  });
 };
 
-const Eigen::Vector2f algebraic_traits<Eigen::Vector2f, addition_t>::unit =
-    Eigen::Vector2f::Ones();
-
 int main() {
-  std::cout << std::endl;
 
-  structure_check<int, addition_t>("addition");
-  structure_check<int, multiplication_t>("multiplication");
-
-  std::cout << std::endl;
-
-  structure_check<double, addition_t>("addition");
-  structure_check<double, multiplication_t>("multiplication");
-
-  std::cout << std::endl;
-  structure_check<std::complex<int>, addition_t>("addition");
-  structure_check<std::complex<int>, multiplication_t>("multiplication");
-
-  std::cout << std::endl;
-
-  structure_check<std::complex<double>, addition_t>("addition");
-  structure_check<std::complex<double>, multiplication_t>("multiplication");
-
-  std::cout << std::endl;
-
-  structure_check<Eigen::Vector2i, addition_t>("addition");
-  structure_check<Eigen::Vector2i, multiplication_t>("multiplication");
-
-  std::cout << std::endl;
-
-  structure_check<Eigen::Vector2f, addition_t>("addition");
-  structure_check<Eigen::Vector2f, multiplication_t>("multiplication");
-
-  std::cout << std::endl;
-
-  structure_check<Eigen::Vector2d, addition_t>("addition");
-  structure_check<Eigen::Vector2d, multiplication_t>("multiplication");
-
-  std::cout << std::endl;
-
-  structure_check<Eigen::Matrix2d, addition_t>("addition");
-  structure_check<Eigen::Matrix2d, multiplication_t>("multiplication");
-
-  std::cout << std::endl;
-
-  std::cout << std::endl << zero<double> << std::endl;
-
-  std::cout << std::endl << one<double> << std::endl;
-
-  std::cout << std::endl << zero<Eigen::Matrix2d> << std::endl;
-
-  std::cout << std::endl << one<Eigen::Matrix2d> << std::endl;
+  test_types<int, double, std::complex<int>, std::complex<double>,
+             Eigen::Vector2i, Eigen::Vector2d, Eigen::Matrix2i,
+             Eigen::Matrix2d>();
 }

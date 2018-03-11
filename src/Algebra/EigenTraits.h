@@ -39,18 +39,18 @@ const Eigen::Matrix<T, N, M>
 
 // Structures
 
-template <typename T, int N, int M, bool Diagnose = false>
-constexpr bool is_magma<Eigen::Matrix<T, N, M>, multiplication_t, Diagnose> =
+template <typename T, int N, int M, bool Force = false>
+constexpr bool is_magma<Eigen::Matrix<T, N, M>, multiplication_t, Force> =
     []() {
       if constexpr (N == M) {
         if constexpr (has_operation<multiplication_t, T>) {
           return true;
         } else {
-          static_assert(!Diagnose, "Matrix scalar type cannot be multiplied!");
+          static_assert(!Force, "Matrix scalar type cannot be multiplied!");
         }
       } else {
         static_assert(
-            !Diagnose,
+            !Force,
             "Non-square matrices are not closed upon multiplication!");
       }
       return false;

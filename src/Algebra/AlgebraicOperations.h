@@ -51,10 +51,10 @@ auto less_then_or_equal_to    = [](auto &&a, auto &&b) { return a <= b; };
 // Bitwise operators
 
 // Compound assignment operators
-auto addition_assigment       = [](auto &&a, auto &&b) { return a += b; };
-auto subtraction_assigment    = [](auto &&a, auto &&b) { return a -= b; };
-auto multiplication_assigment = [](auto &&a, auto &&b) { return a *= b; };
-auto division_assigment       = [](auto &&a, auto &&b) { return a /= b; };
+auto addition_assignment       = [](auto &&a, auto &&b) { return a += b; };
+auto subtraction_assignment    = [](auto &&a, auto &&b) { return a -= b; };
+auto multiplication_assignment = [](auto &&a, auto &&b) { return a *= b; };
+auto division_assignment       = [](auto &&a, auto &&b) { return a /= b; };
 
 ///////////////////////////////////////////////////////////////////////////////
 // Operation Types
@@ -97,6 +97,17 @@ using decrement_prefix_t = decltype(--std::declval<T>());
 
 template <typename T>
 using decrement_postfix_t = decltype(std::declval<T>()--);
+
+//
+
+template <typename T, typename S>
+using addition_assignment_t = decltype(std::declval<T>() += std::declval<S>());
+
+template <typename T, typename S>
+using subtraction_assignment_t = decltype(std::declval<T>() -= std::declval<S>());
+
+template <typename T, typename S>
+using multiplication_assignment_t = decltype(std::declval<T>() *= std::declval<S>());
 
 //
 
