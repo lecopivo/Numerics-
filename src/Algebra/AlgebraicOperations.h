@@ -1,9 +1,9 @@
 #pragma once
 
 #include "../Utils/MetaUtils.h"
-#include "AlgebraicTraits.h"
 
 #include <complex>
+#include <eigen3/Eigen/Dense>
 #include <type_traits>
 
 namespace Numerics {
@@ -102,53 +102,6 @@ using decrement_postfix_t = decltype(std::declval<T>()--);
 
 template <template <typename...> typename OperationType, typename... T>
 constexpr bool has_operation = Utils::is_detected<OperationType, T...>{};
-
-template <typename T, template <typename...> typename OperationType,
-          typename = std::true_type>
-struct operation_traits {
-  template <typename S>
-  using unit_t = decltype(0);
-};
-
-template <typename T>
-struct operation_traits<
-    T, addition_t, std::enable_if_t<std::is_arithmetic_v<T>, std::true_type>> {
-  static constexpr T unit = 0;
-};
-
-template <typename T>
-struct operation_traits<
-    T, multiplication_t,
-    std::enable_if_t<std::is_arithmetic_v<T>, std::true_type>> {
-  static constexpr T unit = 1;
-};
-
-// template <typename T, typename = std::true_type>
-// struct algebraic_traits {};
-
-// template <typename T>
-// struct algebraic_traits<
-//     T, std::enable_if_t<std::is_arithmetic_v<T>, std::true_type>> {
-
-//   static constexpr T zero = operation_traits<T, addition_t>::unit;
-//   static constexpr T one  = operation_traits<T, multiplication_t>::unit;
-// };
-namespace detail {
-template <template <typename...> typename OperationType>
-
-struct unit_detector {
-  template <typename T>
-  using unit_t = decltype(operation_traits<T, OperationType>::unit);
-};
-
-} // namespace detail
-
-template <typename T>
-using haha = detail::unit_detector<addition_t>::unit_t<T>;
-
-template <typename T, template <typename...> typename OperationType>
-constexpr bool has_unit =
-    Utils::is_detected<haha, T>{};
 
 }; // namespace Algebra
 } // namespace Numerics

@@ -10,6 +10,8 @@
 #include <variant>
 #include <vector>
 
+#include <eigen3/Eigen/Dense>
+
 using namespace Numerics;
 using namespace Numerics::Algebra;
 
@@ -25,44 +27,18 @@ struct B {
   }
 };
 
-// xoperation_traits<int,addition_t>::
-
-auto iu = operation_traits<int, addition_t>::unit;
-auto du = operation_traits<double, addition_t>::unit;
-auto im = operation_traits<int, multiplication_t>::unit;
-auto dm = operation_traits<double, multiplication_t>::unit;
-// auto cm = operation_traits<std::complex<double>, multiplication_t>::unit;
-
-template <typename T, template <typename...> typename OperationType>
-void magma_check() {
-  if constexpr (is_magma<T, OperationType>) {
-    std::cout << "Is magma:    " << typeid(T).name() << std::endl;
-  } else {
-    std::cout << "Is not magma:" << typeid(T).name() << std::endl;
-  }
-}
-
 template <typename T>
 void static_container_check() {
   if constexpr (is_static_container<T>) {
-    std::cout << "Is static container:    " << typeid(T).name() << std::endl;
+    std::cout << "Is static container:     " << typeid(T).name() << std::endl;
   } else {
-    std::cout << "Is not static container:" << typeid(T).name() << std::endl;
+    std::cout << "Is not static container: " << typeid(T).name() << std::endl;
   }
 }
 
+
 int main() {
 
-  std::cout << iu << std::endl;
-  std::cout << du << std::endl;
-  std::cout << im << std::endl;
-  std::cout << dm << std::endl;
-  // std::cout << cm << std::endl;
-
-  std::cout << "Hello template Hell!" << std::endl;
-
-  magma_check<double, addition_t>();
-  magma_check<A, addition_t>();
 
   static_container_check<std::vector<double>>();
   static_container_check<std::tuple<double, int, float>>();
