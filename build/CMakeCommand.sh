@@ -12,6 +12,7 @@ rm -f debug/ -R && mkdir -p debug/ && cd debug/
 cmake -DCMAKE_BUILD_TYPE="Debug" \
       -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
       -DCMAKE_INSTALL_PREFIX=~/local/ \
+      -DCMAKE_CXX_COMPILER=clang++ \
       ../../
 
 cd ../
@@ -21,6 +22,7 @@ rm -f release/ -R && mkdir -p release/ && cd release/
 cmake -DCMAKE_BUILD_TYPE="Release" \
       -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
       -DCMAKE_INSTALL_PREFIX=~/local/ \
+      -DCMAKE_CXX_COMPILER=clang++ \
       ../../
 
 cd ../

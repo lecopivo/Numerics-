@@ -1,1 +1,3 @@
 add_executable(sandbox sandbox.cpp)
+
+add_executable(static_container_functor_review static_container_functor_review.cpp)
