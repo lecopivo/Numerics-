@@ -14,90 +14,96 @@ namespace Algebra {
 // One operation structures //
 // --------------------------- //
 
-// Magma
-// template <typename T, template <typename...> typename OperationType>
-// constexpr bool is_magma = has_operation<OperationType, T, T>
-//     &&         has_operation<basic_assignment_t, T, OperationType<T, T>>;
+// Semigroup
+template <typename T, template <typename...> typename Op, bool Force = false>
+constexpr bool is_semigroup = []() {
+  if constexpr (is_consistent<T, Op>) {
 
-template <typename T, template <typename...> typename OperationType,
-          bool Force = false>
-constexpr bool is_magma = []() {
-
-  if constexpr (has_operation<OperationType, T, T>) {
-    if constexpr (has_operation<basic_assignment_t, T &, OperationType<T, T>>) {
+    if constexpr (algebraic_traits<T, Op>::is_associative) {
       return true;
     } else {
-      static_assert(!Force,
-                    "The type is not closed under the given operation!");
+      static_assert(!Force, "Not a semigroup: operation is not associative!");
+      return false;
     }
+
   } else {
-    static_assert(!Force, "The type does not have the required operation!");
+    return false;
   }
-  return false;
 }();
 
-// Monoid
-template <typename T, template <typename...> typename OperationType,
-          bool Force = false>
+template <typename T, template <typename...> typename Op, bool Force = false>
 constexpr bool is_monoid = []() {
-  if constexpr (is_magma<T, OperationType, Force>)
-    if constexpr (has_unit<T, OperationType, Force>)
-      return true;
-  return false;
-}();
-
-// Group
-template <typename T, template <typename...> typename OperationType,
-          bool Force = false>
-constexpr bool is_group = []() {
-  if constexpr (is_monoid<T, OperationType, Force>) {
-    if constexpr (has_inverse<T, OperationType>) {
-      return true;
-    } else {
-      static_assert(!Force,
-                    "The type and operation does not define inverse! "
-                    "Please see documentation how to define an inverse "
-                    "for a type and operation.");
-    }
+  if constexpr (is_semigroup<T, Op, Force> && has_unit<T, Op>) {
+    return true;
+  } else {
+    static_assert(!Force, "Not a monoid: unit element not defined!");
+    return false;
   }
-  return false;
 }();
 
-// Special types
-template <typename T, bool Force = false>
+template <typename T, template <typename...> typename Op, bool Force = false>
+constexpr bool is_group = []() {
+  if constexpr (is_monoid<T, Op, Force> && all_invertible<T, Op>) {
+    return true;
+  } else {
+    static_assert(!Force, "Not a group: some elements are not invertible!");
+    return false;
+  }
+}();
+
+template <typename T, template <typename...> typename Op, bool Force = false>
 constexpr bool is_abelian_group = []() {
-  if constexpr (is_group<T, addition_t, Force>)
-    if constexpr /* x+=y */ (has_operation<addition_assignment_t, T &, T>)
-      if constexpr /* x-=y */ (has_operation<subtraction_assignment_t, T &, T>)
-        if constexpr /* -x */ (has_operation<unary_minus_t, T>)
-          // if constexpr /* +x */ (has_operation<unary_plus_t, T>)
-          return true;
+  if constexpr (is_group<T, Op, Force> &&
+                algebraic_traits<T, Op>::is_commutative) {
+    return true;
+  } else {
+    static_assert(!Force,
+                  "Not an abelian group: operation is not commutative!");
+    return false;
+  }
+}();
+
+template <typename T, template <typename...> typename Add,
+          template <typename...> typename Mul, bool Force = false>
+constexpr bool                        is_ring =
+    is_abelian_group<T, Add, Force> &&is_monoid<T, Mul, Force>;
+
+template <typename T, template <typename...> typename Add,
+          template <typename...> typename Mul, bool Force = false>
+constexpr bool is_commutative_ring = []() {
+  if constexpr (is_ring<T, Add, Mul> &&
+                algebraic_traits<T, Mul>::is_commutative) {
+    return true;
+  } else {
+    static_assert(!Force,
+                  "Not a commutative ring: multiplication is not commutative");
+    return false;
+  }
+}();
+
+template <typename T, template <typename...> typename Add,
+          template <typename...> typename Mul, bool Force = false,
+          typename = void>
+constexpr bool is_division_ring = []() {
+  static_assert(!Force, "Not a divition ring!");
   return false;
 }();
 
 template <typename T, bool Force = false>
-constexpr bool is_multiplicative_group = []() {
-  if constexpr (is_group<T, multiplication_t, Force>)
-    if constexpr /* x*=y */ (has_operation<multiplication_assignment_t, T &, T>)
-      // if constexpr /* +x */ (has_operation<unary_plus_t, T>)
-      return true;
-  return false;
-}();
+constexpr bool is_division_ring<T, addition_t, multiplication_t, Force,
+                                std::enable_if_t<std::is_floating_point_v<T>>> =
+    true;
 
-// Two operation structures //
-// ------------------------ //
+template <typename T, bool Force = false>
+constexpr bool
+    is_division_ring<std::complex<T>, addition_t, multiplication_t, Force,
+                     std::enable_if_t<std::is_floating_point_v<T>>> = true;
 
-// Ring
-// template <typename T, typename Add, typename Neg, typename Mul>
-// constexpr bool is_group(Add &&add, Neg &&neg, Mul &&mul, T zero, T one) {
-//   return is_group<T>(add, neg, zero) && is_monoid<T>(mul, one);
-// }
-
-// Field
-
-// Module
-
-// Vector Space
+template <typename T, template <typename...> typename Add,
+          template <typename...> typename Mul, bool Force = false,
+          typename = void>
+constexpr bool                      is_field =
+    is_division_ring<T, Add, Mul> &&algebraic_traits<T, Mul>::is_commutative;
 
 } // namespace Algebra
 } // namespace Numerics

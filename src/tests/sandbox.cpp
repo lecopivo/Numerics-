@@ -52,7 +52,8 @@ int main() {
   std::array<int, 3>    a2{-3, 1, 0};
   std::array<double, 2> a3{1, 2};
 
-  auto print = [](auto const &x) -> void {
+  float f; 
+  auto print = [&f](auto const &x) -> void {
     std::cout << "| " << typeid(decltype(x)).name() << ": " << x << " |";
   };
 

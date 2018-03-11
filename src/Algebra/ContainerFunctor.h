@@ -11,23 +11,27 @@ namespace Numerics {
 namespace Algebra {
 
 template <typename T>
-using static_container_detector = decltype(
-    std::get<0>(std::declval<std::remove_reference_t<
-                    T>>()), std::tuple_size_v<std::remove_reference_t<T>>);
+using static_container_detector =
+    decltype(std::get<0>(std::declval<std::remove_reference_t<T>>()),
+             std::tuple_size_v<std::remove_reference_t<T>>);
 
 template <typename T>
 constexpr bool is_static_container =
     Utils::is_detected<static_container_detector, T>{};
 
-
 template <typename Op>
 auto static_container_functor(Op &&op) {
-  return [&op](auto &&... c) {
+  // if constexpr (sizeof(Op) > 8) {
+  //     #warning "Operation seams to hold data larger than a single pointer.
+  //     Operation is assumed to be very light weighted object. Consider
+  //     modifying your operation."
+  // }
+  return [op](auto &&... c) {
     static_assert((is_static_container<decltype(c)> && ... && true),
                   "All of the arguments must be static containers!");
 
-    constexpr int N =
-        std::tuple_size_v<std::remove_reference_t<decltype(Utils::get<0>(c...))>>;
+    constexpr int N = std::tuple_size_v<
+        std::remove_reference_t<decltype(Utils::get<0>(c...))>>;
 
     static_assert(
         (true == ... ==

@@ -22,6 +22,17 @@ namespace Algebra {
 // Operations
 ///////////////////////////////////////////////////////////////////////////////
 
+struct basic_assignment_2 {
+
+  template <typename T, typename S>
+  auto operator()(T &&t, S &&s) {
+    return t = s;
+  }
+
+  template <typename T, typename S>
+  using result_type = decltype(std::declval<T>() = std::declval<S>());
+};
+
 // Should these lambdas have std::forward inside?
 
 // Arithmetic operators
@@ -104,10 +115,12 @@ template <typename T, typename S>
 using addition_assignment_t = decltype(std::declval<T>() += std::declval<S>());
 
 template <typename T, typename S>
-using subtraction_assignment_t = decltype(std::declval<T>() -= std::declval<S>());
+using subtraction_assignment_t =
+    decltype(std::declval<T>() -= std::declval<S>());
 
 template <typename T, typename S>
-using multiplication_assignment_t = decltype(std::declval<T>() *= std::declval<S>());
+using multiplication_assignment_t =
+    decltype(std::declval<T>() *= std::declval<S>());
 
 //
 
