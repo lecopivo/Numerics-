@@ -63,17 +63,17 @@ int main() {
 
   std::cout << std::endl << "add" << std::endl;
 
-  auto tuple_add = static_container_functor(addition);
+  auto tuple_add = static_container_functor(addition{});
   print_tuple(tuple_add(t1, t2));
 
   std::cout << std::endl << "sub " << std::endl;
 
-  auto tuple_sub = static_container_functor(subtraction);
+  auto tuple_sub = static_container_functor(subtraction{});
   print_tuple(tuple_sub(t1, t3));
 
   std::cout << std::endl << "div" << std::endl;
 
-  auto tuple_div = static_container_functor(division);
+  auto tuple_div = static_container_functor(division{});
   print_tuple(tuple_div(t1, t3));
 
   std::cout << std::endl;
@@ -93,8 +93,8 @@ int main() {
   // std::cout << val << std::endl;
   // std::cout << val2 << std::endl;
 
-  std::cout << has_operation<addition_t, double, double> << std::endl;
-  std::cout << has_operation<addition_t, A, A> << std::endl;
+  std::cout << has_operation<addition, double, double> << std::endl;
+  std::cout << has_operation<addition, A, A> << std::endl;
 
   int g;
   std::cout << g << std::endl;

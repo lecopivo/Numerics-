@@ -15,7 +15,7 @@ namespace Algebra {
 // --------------------------- //
 
 // Semigroup
-template <typename T, template <typename...> typename Op, bool Force = false>
+template <typename T, typename Op, bool Force = false>
 constexpr bool is_semigroup = []() {
   if constexpr (is_consistent<T, Op>) {
 
@@ -31,7 +31,7 @@ constexpr bool is_semigroup = []() {
   }
 }();
 
-template <typename T, template <typename...> typename Op, bool Force = false>
+template <typename T, typename Op, bool Force = false>
 constexpr bool is_monoid = []() {
   if constexpr (is_semigroup<T, Op, Force> && has_unit<T, Op>) {
     return true;
@@ -41,7 +41,7 @@ constexpr bool is_monoid = []() {
   }
 }();
 
-template <typename T, template <typename...> typename Op, bool Force = false>
+template <typename T, typename Op, bool Force = false>
 constexpr bool is_group = []() {
   if constexpr (is_monoid<T, Op, Force> && all_invertible<T, Op>) {
     return true;
@@ -51,7 +51,7 @@ constexpr bool is_group = []() {
   }
 }();
 
-template <typename T, template <typename...> typename Op, bool Force = false>
+template <typename T, typename Op, bool Force = false>
 constexpr bool is_abelian_group = []() {
   if constexpr (is_group<T, Op, Force> &&
                 algebraic_traits<T, Op>::is_commutative) {
@@ -63,13 +63,11 @@ constexpr bool is_abelian_group = []() {
   }
 }();
 
-template <typename T, template <typename...> typename Add,
-          template <typename...> typename Mul, bool Force = false>
+template <typename T, typename Add, typename Mul, bool Force = false>
 constexpr bool                        is_ring =
     is_abelian_group<T, Add, Force> &&is_monoid<T, Mul, Force>;
 
-template <typename T, template <typename...> typename Add,
-          template <typename...> typename Mul, bool Force = false>
+template <typename T, typename Add, typename Mul, bool Force = false>
 constexpr bool is_commutative_ring = []() {
   if constexpr (is_ring<T, Add, Mul> &&
                 algebraic_traits<T, Mul>::is_commutative) {
@@ -81,8 +79,7 @@ constexpr bool is_commutative_ring = []() {
   }
 }();
 
-template <typename T, template <typename...> typename Add,
-          template <typename...> typename Mul, bool Force = false,
+template <typename T, typename Add, typename Mul, bool Force = false,
           typename = void>
 constexpr bool is_division_ring = []() {
   static_assert(!Force, "Not a divition ring!");
@@ -90,17 +87,16 @@ constexpr bool is_division_ring = []() {
 }();
 
 template <typename T, bool Force = false>
-constexpr bool is_division_ring<T, addition_t, multiplication_t, Force,
+constexpr bool is_division_ring<T, addition, multiplication, Force,
                                 std::enable_if_t<std::is_floating_point_v<T>>> =
     true;
 
 template <typename T, bool Force = false>
 constexpr bool
-    is_division_ring<std::complex<T>, addition_t, multiplication_t, Force,
+    is_division_ring<std::complex<T>, addition, multiplication, Force,
                      std::enable_if_t<std::is_floating_point_v<T>>> = true;
 
-template <typename T, template <typename...> typename Add,
-          template <typename...> typename Mul, bool Force = false,
+template <typename T, typename Add, typename Mul, bool Force = false,
           typename = void>
 constexpr bool                      is_field =
     is_division_ring<T, Add, Mul> &&algebraic_traits<T, Mul>::is_commutative;

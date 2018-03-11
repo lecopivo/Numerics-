@@ -3,7 +3,7 @@
 #include "../Utils/MetaUtils.h"
 
 #include <complex>
-#include <eigen3/Eigen/Dense>
+#include <string>
 #include <type_traits>
 
 namespace Numerics {
@@ -22,111 +22,276 @@ namespace Algebra {
 // Operations
 ///////////////////////////////////////////////////////////////////////////////
 
-struct basic_assignment_2 {
+// Should these lambdas have std::forward inside?
+
+struct basic_assignment {
+  static constexpr char name[] = "basic_assignment";
 
   template <typename T, typename S>
   auto operator()(T &&t, S &&s) {
     return t = s;
-  }
+  };
 
   template <typename T, typename S>
   using result_type = decltype(std::declval<T>() = std::declval<S>());
-
 };
 
-// Should these lambdas have std::forward inside?
+struct addition {
+  static constexpr char name[] = "addition";
+  template <typename T, typename... S>
+  auto operator()(T &&t, S &&... s) {
+    return (t + ... + s);
+  };
 
-// Arithmetic operators
-auto basic_assignment  = [](auto &&a, auto &&b) { return a = b; };
-auto addition          = [](auto &&a, auto &&... b) { return (a + ... + b); };
-auto subtraction       = [](auto &&a, auto &&b) { return a - b; };
-auto unary_plus        = [](auto &&a) { return +a; };
-auto unary_minus       = [](auto &&a) { return -a; };
-auto multiplication    = [](auto &&a, auto &&... b) { return (a * ... * b); };
-auto division          = [](auto &&a, auto &&b) { return a / b; };
-auto modulo            = [](auto &&a, auto &&b) { return a % b; };
-auto increment_prefix  = [](auto &&a) { return ++a; };
-auto increment_postfix = [](auto &&a) { return a++; };
-auto decrement_prefix  = [](auto &&a) { return --a; };
-auto decrement_postfix = [](auto &&a) { return a--; };
+  template <typename T, typename... S>
+  using result_type = decltype((std::declval<T>() + ... + std::declval<S>()));
+};
 
-// Comparison operators/relational operators
-auto equal_to     = [](auto &&a, auto &&... b) { return (a == ... == b); };
-auto not_equal_to = [](auto &&a, auto &&b) { return (a != b); };
-auto greater_then = [](auto &&a, auto &&b) { return a > b; };
-auto less_then    = [](auto &&a, auto &&b) { return a < b; };
-auto greater_then_or_equal_to = [](auto &&a, auto &&b) { return a >= b; };
-auto less_then_or_equal_to    = [](auto &&a, auto &&b) { return a <= b; };
+struct subtraction {
+  static constexpr char name[] = "subtraction";
+  
+  template <typename T, typename S>
+  auto operator()(T &&t, S &&s) {
+    return t - s;
+  };
 
-// Logical operators
+  template <typename T, typename S>
+  using result_type = decltype(std::declval<T>() - std::declval<S>());
+};
 
-// Bitwise operators
+struct unary_plus {
+  static constexpr char name[] = "unary_plus";
+  
+  template <typename T>
+  auto operator()(T &&t) {
+    return +t;
+  };
 
-// Compound assignment operators
-auto addition_assignment       = [](auto &&a, auto &&b) { return a += b; };
-auto subtraction_assignment    = [](auto &&a, auto &&b) { return a -= b; };
-auto multiplication_assignment = [](auto &&a, auto &&b) { return a *= b; };
-auto division_assignment       = [](auto &&a, auto &&b) { return a /= b; };
+  template <typename T>
+  using result_type = decltype(+std::declval<T>());
+};
 
-///////////////////////////////////////////////////////////////////////////////
-// Operation Types
-///////////////////////////////////////////////////////////////////////////////
+struct unary_minus {
+  static constexpr char name[] = "unary_minus";
+  
+  template <typename T>
+  auto operator()(T &&t) {
+    return -t;
+  };
 
-// Arithmetic operators
-template <typename T, typename S>
-using basic_assignment_t = decltype(std::declval<T>() = std::declval<S>());
+  template <typename T>
+  using result_type = decltype(-std::declval<T>());
+};
 
-template <typename T, typename... S>
-using addition_t = decltype((std::declval<T>() + ... + std::declval<S>()));
+struct multiplication {
+  static constexpr char name[] = "multiplication";
+  
+  template <typename T, typename... S>
+  auto operator()(T &&t, S &&... s) {
+    return (t * ... * s);
+  };
 
-template <typename T, typename S>
-using subtraction_t = decltype(std::declval<T>() - std::declval<S>());
+  template <typename T, typename... S>
+  using result_type = decltype((std::declval<T>() * ... * std::declval<S>()));
+};
 
-template <typename T>
-using unary_plus_t = decltype(+std::declval<T>());
+struct division {
+  static constexpr char name[] = "division";
+  
+  template <typename T, typename S>
+  auto operator()(T &&t, S &&s) {
+    return t / s;
+  };
 
-template <typename T>
-using unary_minus_t = decltype(-std::declval<T>());
+  template <typename T, typename S>
+  using result_type = decltype(std::declval<T>() / std::declval<S>());
+};
 
-template <typename T, typename... S>
-using multiplication_t =
-    decltype((std::declval<T>() * ... * std::declval<S>()));
+struct modulo {
+  static constexpr char name[] = "modulo";
+  
+  template <typename T, typename S>
+  auto operator()(T &&t, S &&s) {
+    return t % s;
+  };
 
-template <typename T, typename S>
-using division_t = decltype(std::declval<T>() / std::declval<S>());
+  template <typename T, typename S>
+  using result_type = decltype(std::declval<T>() % std::declval<S>());
+};
 
-template <typename T, typename S>
-using modulo_t = decltype(std::declval<T>() % std::declval<S>());
+struct increment_prefix {
+  static constexpr char name[] = "increment_prefix";
+  
+  template <typename T>
+  auto operator()(T &&t) {
+    return ++t;
+  };
 
-template <typename T>
-using increment_prefix_t = decltype(++std::declval<T>());
+  template <typename T>
+  using result_type = decltype(++std::declval<T>());
+};
 
-template <typename T>
-using increment_postfix_t = decltype(std::declval<T>()++);
+struct increment_postfix {
+  static constexpr char name[] = "increment_postfix";
+  
+  template <typename T>
+  auto operator()(T &&t) {
+    return t++;
+  };
 
-template <typename T>
-using decrement_prefix_t = decltype(--std::declval<T>());
+  template <typename T>
+  using result_type = decltype(std::declval<T>()++);
+};
 
-template <typename T>
-using decrement_postfix_t = decltype(std::declval<T>()--);
+struct decrement_prefix {
+  static constexpr char name[] = "decrement_prefix";
+  
+  template <typename T>
+  auto operator()(T &&t) {
+    return --t;
+  };
+
+  template <typename T>
+  using result_type = decltype(--std::declval<T>());
+};
+
+struct decrement_postfix {
+  static constexpr char name[] = "decrement_postfix";
+  
+  template <typename T>
+  auto operator()(T &&t) {
+    return t--;
+  };
+
+  template <typename T>
+  using result_type = decltype(std::declval<T>()--);
+};
+
+struct equal_to {
+  static constexpr char name[] = "equal_to";
+  
+  template <typename T, typename... S>
+  auto operator()(T &&t, S &&... s) {
+    return (t == ... == s);
+  };
+
+  template <typename T, typename... S>
+  using result_type = decltype((std::declval<T>() == ... == std::declval<S>()));
+};
+
+struct not_equal_to {
+  static constexpr char name[] = "not_equal_to";
+  
+  template <typename T, typename S>
+  auto operator()(T &&t, S &&s) {
+    return (t != s);
+  };
+
+  template <typename T, typename S>
+  using result_type = decltype((std::declval<T>() != std::declval<S>()));
+};
+
+struct greater_then {
+  static constexpr char name[] = "greater_then";
+  
+  template <typename T, typename S>
+  auto operator()(T &&t, S &&s) {
+    return t > s;
+  };
+
+  template <typename T, typename S>
+  using result_type = decltype(std::declval<T>() > std::declval<S>());
+};
+
+struct less_then {
+  static constexpr char name[] = "less_then";
+  
+  template <typename T, typename S>
+  auto operator()(T &&t, S &&s) {
+    return t < s;
+  };
+
+  template <typename T, typename S>
+  using result_type = decltype(std::declval<T>() < std::declval<S>());
+};
+
+struct greater_then_or_equal_to {
+  static constexpr char name[] = "greater_then_or_equal_to";
+  
+  template <typename T, typename S>
+  auto operator()(T &&t, S &&s) {
+    return t >= s;
+  };
+
+  template <typename T, typename S>
+  using result_type = decltype(std::declval<T>() >= std::declval<S>());
+};
+
+struct less_then_or_equal_to {
+  static constexpr char name[] = "less_then_or_equal_to";
+  
+  template <typename T, typename S>
+  auto operator()(T &&t, S &&s) {
+    return t <= s;
+  };
+
+  template <typename T, typename S>
+  using result_type = decltype(std::declval<T>() <= std::declval<S>());
+};
+
+struct addition_assignment {
+  static constexpr char name[] = "addition_assignment";
+  
+  template <typename T, typename S>
+  auto operator()(T &&t, S &&s) {
+    return t += s;
+  };
+
+  template <typename T, typename S>
+  using result_type = decltype(std::declval<T>() += std::declval<S>());
+};
+
+struct subtraction_assignment {
+  static constexpr char name[] = "subtraction_assignment";
+  
+  template <typename T, typename S>
+  auto operator()(T &&t, S &&s) {
+    return t -= s;
+  };
+
+  template <typename T, typename S>
+  using result_type = decltype(std::declval<T>() -= std::declval<S>());
+};
+
+struct multiplication_assignment {
+  static constexpr char name[] = "multiplication_assignment";
+  
+  template <typename T, typename S>
+  auto operator()(T &&t, S &&s) {
+    return t *= s;
+  };
+
+  template <typename T, typename S>
+  using result_type = decltype(std::declval<T>() *= std::declval<S>());
+};
+
+struct division_assignment {
+  static constexpr char name[] = "division_assignment";
+  
+  template <typename T, typename S>
+  auto operator()(T &&t, S &&s) {
+    return t /= s;
+  };
+
+  template <typename T, typename S>
+  using result_type = decltype(std::declval<T>() /= std::declval<S>());
+};
 
 //
 
-template <typename T, typename S>
-using addition_assignment_t = decltype(std::declval<T>() += std::declval<S>());
-
-template <typename T, typename S>
-using subtraction_assignment_t =
-    decltype(std::declval<T>() -= std::declval<S>());
-
-template <typename T, typename S>
-using multiplication_assignment_t =
-    decltype(std::declval<T>() *= std::declval<S>());
-
-//
-
-template <template <typename...> typename OperationType, typename... T>
-constexpr bool has_operation = Utils::is_detected<OperationType, T...>{};
+template <typename Op, typename... T>
+constexpr bool has_operation =
+    Utils::is_detected<Op::template result_type, T...>{};
 
 }; // namespace Algebra
 } // namespace Numerics

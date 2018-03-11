@@ -3,6 +3,8 @@
 #include "AlgebraicStructures.h"
 #include "AlgebraicTraits.h"
 
+#include <eigen3/Eigen/Dense>
+
 namespace Numerics {
 namespace Algebra {
 
@@ -12,8 +14,8 @@ namespace Algebra {
 
 template <typename T, int N, int M>
 struct algebraic_traits<
-    Eigen::Matrix<T, N, M>, addition_t,
-    std::enable_if_t<is_abelian_group<T, addition_t> && (N > 0) && (M > 0)>> {
+    Eigen::Matrix<T, N, M>, addition,
+    std::enable_if_t<is_abelian_group<T, addition> && (N > 0) && (M > 0)>> {
   static constexpr bool is_associative = true;
   static constexpr bool is_commutative = true;
 
@@ -24,8 +26,8 @@ struct algebraic_traits<
 
 template <typename T, int N, int M>
 const Eigen::Matrix<T, N, M>
-    algebraic_traits<Eigen::Matrix<T, N, M>, addition_t,
-                     std::enable_if_t<is_abelian_group<T, addition_t> &&
+    algebraic_traits<Eigen::Matrix<T, N, M>, addition,
+                     std::enable_if_t<is_abelian_group<T, addition> &&
                                       (N > 0) && (M > 0)>>::unit =
         Eigen::Matrix<T, N, M>::Zero();
 
@@ -35,9 +37,9 @@ const Eigen::Matrix<T, N, M>
 
 template <typename T, int N, int M>
 struct algebraic_traits<
-    Eigen::Matrix<T, N, M>, multiplication_t,
-    std::enable_if_t<is_commutative_ring<T, addition_t, multiplication_t> &&
-                     !is_field<T, addition_t, multiplication_t> && (N > 0) &&
+    Eigen::Matrix<T, N, M>, multiplication,
+    std::enable_if_t<is_commutative_ring<T, addition, multiplication> &&
+                     !is_field<T, addition, multiplication> && (N > 0) &&
                      (M > 0) && (N == M)>> {
   static constexpr bool is_associative = true;
   static constexpr bool is_commutative = false;
@@ -49,9 +51,9 @@ struct algebraic_traits<
 
 template <typename T, int N, int M>
 const Eigen::Matrix<T, N, M> algebraic_traits<
-    Eigen::Matrix<T, N, M>, multiplication_t,
-    std::enable_if_t<is_commutative_ring<T, addition_t, multiplication_t> &&
-                     !is_field<T, addition_t, multiplication_t> && (N > 0) &&
+    Eigen::Matrix<T, N, M>, multiplication,
+    std::enable_if_t<is_commutative_ring<T, addition, multiplication> &&
+                     !is_field<T, addition, multiplication> && (N > 0) &&
                      (M > 0) && (N == M)>>::unit =
     Eigen::Matrix<T, N, M>::Identity();
 
@@ -60,8 +62,8 @@ const Eigen::Matrix<T, N, M> algebraic_traits<
 ///////////////////////////////
 template <typename T, int N, int M>
 struct algebraic_traits<
-    Eigen::Matrix<T, N, M>, multiplication_t,
-    std::enable_if_t<is_field<T, addition_t, multiplication_t> && (N > 0) &&
+    Eigen::Matrix<T, N, M>, multiplication,
+    std::enable_if_t<is_field<T, addition, multiplication> && (N > 0) &&
                      (M > 0) && (N == M)>> {
   static constexpr bool is_associative = true;
   static constexpr bool is_commutative = false;
@@ -77,13 +79,13 @@ struct algebraic_traits<
 
 template <typename T, int N, int M>
 const Eigen::Matrix<T, N, M> algebraic_traits<
-    Eigen::Matrix<T, N, M>, multiplication_t,
-    std::enable_if_t<is_field<T, addition_t, multiplication_t> && (N > 0) &&
+    Eigen::Matrix<T, N, M>, multiplication,
+    std::enable_if_t<is_field<T, addition, multiplication> && (N > 0) &&
                      (M > 0) && (N == M)>>::unit =
     Eigen::Matrix<T, N, M>::Identity();
 
 // template <typename T, int N, int M>
-// struct algebraic_traits<Eigen::Matrix<T, N, M>, multiplication_t,
+// struct algebraic_traits<Eigen::Matrix<T, N, M>, multiplication,
 //                         std::enable_if_t<std::is_floating_point_v<T> &&
 //                                          (N > 0) && (M > 0) && (N == M)>> {
 //   static const Eigen::Matrix<T, N, M> unit;
@@ -93,7 +95,7 @@ const Eigen::Matrix<T, N, M> algebraic_traits<
 
 // template <typename T, int N, int M>
 // const Eigen::Matrix<T, N, M>
-//     algebraic_traits<Eigen::Matrix<T, N, M>, multiplication_t,
+//     algebraic_traits<Eigen::Matrix<T, N, M>, multiplication,
 //                      std::enable_if_t<std::is_floating_point_v<T> && (N > 0)
 //                      &&
 //                                       (M > 0) && (N == M)>>::unit =
@@ -102,10 +104,10 @@ const Eigen::Matrix<T, N, M> algebraic_traits<
 // // Structures
 
 // template <typename T, int N, int M, bool Force = false>
-// constexpr bool is_magma<Eigen::Matrix<T, N, M>, multiplication_t, Force> =
+// constexpr bool is_magma<Eigen::Matrix<T, N, M>, multiplication, Force> =
 //     []() {
 //       if constexpr (N == M) {
-//         if constexpr (has_operation<multiplication_t, T>) {
+//         if constexpr (has_operation<multiplication, T>) {
 //           return true;
 //         } else {
 //           static_assert(!Force, "Matrix scalar type cannot be multiplied!");
