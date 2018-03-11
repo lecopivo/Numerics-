@@ -31,6 +31,7 @@ struct basic_assignment_2 {
 
   template <typename T, typename S>
   using result_type = decltype(std::declval<T>() = std::declval<S>());
+
 };
 
 // Should these lambdas have std::forward inside?

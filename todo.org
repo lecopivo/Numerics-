@@ -1,0 +1,20 @@
+* TODO Change operation 
+  I want to change the way I define operations. Thus code like
+  #+BEGIN_SRC c++
+    auto addition = [](auto &&a, auto &&... b) { return (a + ... + b); };
+
+    template <typename T, typename... S>
+    using addition_t = decltype((std::declval<T>() + ... + std::declval<S>()));
+  #+END_SRC
+  should be changed to
+  #+BEGIN_SRC c++
+    struct addition{
+      template<class T, class...S>
+      using result_type = decltype((std::declval<T>() + ... + std::declval<S>()));
+
+      template<class T, class...S>
+      operator()(T&& t, S&&...s){ return (t+ ...+s)}
+    };
+  #+END_SRC
+  
+  This should help to keep code together.
