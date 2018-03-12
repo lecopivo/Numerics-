@@ -80,18 +80,18 @@ constexpr bool is_commutative_ring = []() {
 }();
 
 template <typename T, typename Add, typename Mul, bool Force = false,
-          typename = void>
+          typename SFINAE = void>
 constexpr bool is_division_ring = []() {
   static_assert(!Force, "Not a divition ring!");
   return false;
 }();
 
-template <typename T, bool Force = false>
-constexpr bool is_division_ring<T, addition, multiplication, Force,
+template <typename T, bool Force>
+constexpr bool  is_division_ring<T, addition, multiplication, Force,
                                 std::enable_if_t<std::is_floating_point_v<T>>> =
     true;
 
-template <typename T, bool Force = false>
+template <typename T, bool Force>
 constexpr bool
     is_division_ring<std::complex<T>, addition, multiplication, Force,
                      std::enable_if_t<std::is_floating_point_v<T>>> = true;
@@ -99,7 +99,7 @@ constexpr bool
 template <typename T, typename Add, typename Mul, bool Force = false,
           typename = void>
 constexpr bool                      is_field =
-    is_division_ring<T, Add, Mul> &&algebraic_traits<T, Mul>::is_commutative;
+  is_division_ring<T, Add, Mul,Force> &&algebraic_traits<T, Mul>::is_commutative;
 
 } // namespace Algebra
 } // namespace Numerics

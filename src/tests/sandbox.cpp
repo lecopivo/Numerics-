@@ -20,15 +20,13 @@ public:
   using haha = double;
 };
 
-template <typename T>
-struct B {
+template <typename T> struct B {
   static void foo() {
     std::cout << "Foo called: " << typeid(T).name() << std::endl;
   }
 };
 
-template <typename T>
-void static_container_check() {
+template <typename T> void static_container_check() {
   if constexpr (is_static_container<T>) {
     std::cout << "Is static container:     " << typeid(T).name() << std::endl;
   } else {
@@ -36,9 +34,7 @@ void static_container_check() {
   }
 }
 
-
 int main() {
-
 
   static_container_check<std::vector<double>>();
   static_container_check<std::tuple<double, int, float>>();
@@ -52,8 +48,8 @@ int main() {
   std::array<int, 3>    a2{-3, 1, 0};
   std::array<double, 2> a3{1, 2};
 
-  float f; 
-  auto print = [&f](auto const &x) -> void {
+  float f;
+  auto  print = [&f](auto const &x) -> void {
     std::cout << "| " << typeid(decltype(x)).name() << ": " << x << " |";
   };
 
@@ -93,13 +89,14 @@ int main() {
   // std::cout << val << std::endl;
   // std::cout << val2 << std::endl;
 
-  std::cout << has_operation<addition, double, double> << std::endl;
-  std::cout << has_operation<addition, A, A> << std::endl;
+  Eigen::Vector2f u, v;
+  u << 1, 2;
+  v << 3, 4;
+  auto vt = std::make_tuple(u, v);
 
-  int g;
-  std::cout << g << std::endl;
-  std::forward<int &>(g) = 10;
-  std::cout << g << std::endl;
+  auto ta = tuple_add(vt, vt);
+  
+  print_tuple(ta);
 
   return 0;
 }

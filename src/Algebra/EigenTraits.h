@@ -31,9 +31,9 @@ const Eigen::Matrix<T, N, M>
                                       (N > 0) && (M > 0)>>::unit =
         Eigen::Matrix<T, N, M>::Zero();
 
-///////////////////////////////////
-// Matrix with com. ring entries //
-///////////////////////////////////
+/////////////////////////////////////////////////
+// Matrix multiplication over commutative ring //
+/////////////////////////////////////////////////
 
 template <typename T, int N, int M>
 struct algebraic_traits<
@@ -57,9 +57,9 @@ const Eigen::Matrix<T, N, M> algebraic_traits<
                      (M > 0) && (N == M)>>::unit =
     Eigen::Matrix<T, N, M>::Identity();
 
-///////////////////////////////
-// Matrix with field entries //
-///////////////////////////////
+//////////////////////////////////////
+// Matrix multiplication over field //
+//////////////////////////////////////
 template <typename T, int N, int M>
 struct algebraic_traits<
     Eigen::Matrix<T, N, M>, multiplication,

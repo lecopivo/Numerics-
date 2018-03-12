@@ -8,7 +8,7 @@
 namespace Numerics {
 namespace Algebra {
 
-template <typename T, typename Op, typename = void>
+template <typename T, typename Op, typename SFINAE = void>
 struct algebraic_traits {
   static constexpr bool is_associative = false;
   static constexpr bool is_commutative = false;
