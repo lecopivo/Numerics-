@@ -13,7 +13,14 @@ template <class U, class... T> constexpr bool is_all_same() {
 template <int I, typename... Ts>
 using get_type = typename std::tuple_element<I, std::tuple<Ts...>>::type;
 
+template <int I, typename... Ts>
+using pack_get_type = typename std::tuple_element<I, std::tuple<Ts...>>::type;
+
 template <int I, class... Ts> constexpr decltype(auto) get(Ts &&... ts) {
+  return std::get<I>(std::forward_as_tuple(ts...));
+}
+
+template <int I, class... Ts> constexpr decltype(auto) pack_get(Ts &&... ts) {
   return std::get<I>(std::forward_as_tuple(ts...));
 }
 
