@@ -4,6 +4,6 @@ add_executable(static_container_functor_review static_container_functor_review.c
 
 add_executable(algebraic_structures_test algebraic_structures_test.cpp)
 
-add_executable(category_test category_test.cpp)
+# add_executable(category_test category_test.cpp)
 
-add_executable(struct_parse struct_parse.cpp)
+add_executable(category_test2 category_test2.cpp)
