@@ -68,11 +68,32 @@ constexpr bool is_category = []() {
   return has__is_object(hana::type_c<T>) && has__is_morphism(hana::type_c<T>);
 }();
 
+template <typename T>
+constexpr bool is_functor = []() {
+  auto has__source =
+      hana::is_valid([](auto t) -> typename decltype(t)::source_category{});
+  auto has__target =
+      hana::is_valid([](auto t) -> typename decltype(t)::target_category{});
+}();
+
 } // namespace concepts
 
 auto a = hana::type_c<int>;
 
 struct universal_category {
+
+  template <typename Type>
+  struct type_object {
+    using type = Type;
+
+    template <typename T>
+    static constexpr bool is_element(T &&t) {
+      return std::is_same_v<std::remove_reference_t<T>, Type>;
+    }
+  };
+
+  template <template <typename...> typename T>
+  struct template_object {};
 
   template <typename T>
   static constexpr bool is_object(T const &) {
@@ -91,22 +112,53 @@ struct universal_category {
   };
 };
 
+////////////////////////////////////////////////////////////////////////
+//  _____                             _                               //
+// |_   _|   _ _ __   ___    ___ __ _| |_ ___  __ _  ___  _ __ _   _  //
+//   | || | | | '_ \ / _ \  / __/ _` | __/ _ \/ _` |/ _ \| '__| | | | //
+//   | || |_| | |_) |  __/ | (_| (_| | ||  __/ (_| | (_) | |  | |_| | //
+//   |_| \__, | .__/ \___|  \___\__,_|\__\___|\__, |\___/|_|   \__, | //
+//       |___/|_|                             |___/            |___/  //
+//                                                                    //
+////////////////////////////////////////////////////////////////////////
+
 struct type_category {
 
+  ///////////////////////////////////
+  //        _     _           _    //
+  //   ___ | |__ (_) ___  ___| |_  //
+  //  / _ \| '_ \| |/ _ \/ __| __| //
+  // | (_) | |_) | |  __/ (__| |_  //
+  //  \___/|_.__// |\___|\___|\__| //
+  //           |__/                //
+  //                               //
+  ///////////////////////////////////
+
   template <typename Type>
-  struct object {
+  using object = universal_category::type_object<Type>;
 
-    using type = Type;
-
-    template <typename T>
-    static constexpr bool is_element(T &&t) {
-      return std::is_same_v<std::remove_reference_t<T>, Type>;
+  template <typename T>
+  static constexpr bool is_object(T const &) {
+    if constexpr (is_template_instance_of<object, T>) {
+      return true;
+    } else {
+      return false;
     }
-  };
+  }
 
-  template <typename SourceType, typename TargetType, typename Fun>
+  ////////////////////////////////////////////////////////
+  //                             _     _                //
+  //  _ __ ___   ___  _ __ _ __ | |__ (_)___ _ __ ___   //
+  // | '_ ` _ \ / _ \| '__| '_ \| '_ \| / __| '_ ` _ \  //
+  // | | | | | | (_) | |  | |_) | | | | \__ \ | | | | | //
+  // |_| |_| |_|\___/|_|  | .__/|_| |_|_|___/_| |_| |_| //
+  //                      |_|                           //
+  //                                                    //
+  ////////////////////////////////////////////////////////
+
+  template <typename Fun, typename SourceType, typename TargetType>
   struct morphism {
-    morphism(Fun &&_fun)
+    morphism(Fun &&_fun, object<SourceType>, object<TargetType>)
         : fun(std::forward<Fun>(_fun)) {
       using namespace hana::literals;
       static_assert(std::is_invocable_r_v<TargetType, Fun, SourceType>,
@@ -127,15 +179,6 @@ struct type_category {
   };
 
   template <typename T>
-  static constexpr bool is_object(T const &) {
-    if constexpr (is_template_instance_of<object, T>) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  template <typename T>
   static constexpr bool is_morphism(T const &) {
     if constexpr (concepts::is_morphism<T, type_category>) {
 
@@ -147,11 +190,79 @@ struct type_category {
     return false;
   }
 
-  template <typename SourceType, typename TargetType, typename Fun>
-  static auto make_morphism(Fun &&fun) {
-    return morphism<SourceType, TargetType, Fun>(std::forward<Fun>(fun));
-  }
-};
+  ////////////////////////////////////////////
+  //                      _            _    //
+  //  _ __  _ __ ___   __| |_   _  ___| |_  //
+  // | '_ \| '__/ _ \ / _` | | | |/ __| __| //
+  // | |_) | | | (_) | (_| | |_| | (__| |_  //
+  // | .__/|_|  \___/ \__,_|\__,_|\___|\__| //
+  // |_|                                    //
+  //                                        //
+  ////////////////////////////////////////////
+
+  struct product /* multi_functor_concept */ {
+    template <int I>
+    using source_category = type_category;
+    using target_category = type_category;
+
+    template <typename... Objs>
+    static constexpr auto map(Objs const &... objs) {
+
+      static_assert((is_object(objs) && ...), "Invalid arguments!");
+
+      return object<std::tuple<typename Objs::type...>>{};
+    }
+
+    /* canonical projection
+     */
+    template <std::size_t I, typename ProductObj>
+    static auto pi(ProductObj const &obj) {
+
+      static_assert(is_product(obj), "Invalid argument!");
+
+      using Src_t = typename ProductObj::type;
+      using Trg_t = typename template_instance<
+          std::tuple, typename ProductObj::type>::template get<I>;
+
+      return morphism{[](auto &&s) -> decltype(auto) {
+
+                        static_assert(std::is_same_v<Src_t, decltype(s)>,
+                                      "Invalid argument");
+
+                        return std::get<I>(std::forward<decltype(s)>(s));
+                      },
+                      object<Src_t>{}, object<Trg_t>{}};
+    }
+
+    // template <typename... Morphs>
+    // static auto fmap(Morphs &&... morphs) {
+
+    //   static_assert((is_morphism(morphs) && ...), "Invalid arguments!");
+
+    //   constexpr int N = sizeof...(morphs);
+
+    //   using SrcObj = decltype(map(morphs.source()...));
+    //   using TrgObj = decltype(map(morphs.target()...));
+    //   using Src_t  = typename SrcObj::type;
+    //   using Trg_t  = typename TrgObj::type;
+
+    //   return morphism{
+    //       [morphs...](Src_t &&s) mutable -> decltype(auto) {
+
+    //         auto morp = [&](auto I) { return pack_get<I>(morphs...); };
+    //         auto proj = [&](auto I) { return pi<I>(object<Src_t>{}); };
+    //         auto fun  = [&](auto I) { return compose(morp(I), proj(I)); };
+
+    //         auto impl = [&](auto... I) {
+    //           return std::make_tuple(fun(I)(std::forward<Src_t>(s))...);
+    //         };
+
+    //         return std::apply(impl, integral_sequence<N>);
+    //       },
+    //       object<Src_t>{}, object<Trg_t>{}};
+    // }
+  };
+}; // namespace type_category
 
 struct function_object_category {
 

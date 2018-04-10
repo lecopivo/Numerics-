@@ -20,13 +20,15 @@ int main() {
 
   std::cout << type_name<decltype(a)>() << std::endl;
 
-  auto m = type_category::make_morphism<double, double>(sin);
+  auto l = [](double x) {return sin(x);};
 
-  std::cout << m(3.1415/2) << std::endl;
+  // auto m = type_category::morphism{l,type_category::object<double>{}, type_category::object<double>{}};
 
-  std::cout << type_category::is_morphism(m) << std::endl;
+  // std::cout << m(3.1415/2) << std::endl;
 
-  std::cout << function_object_category::object<double,double>::is_element(m) << std::endl;
+  // std::cout << type_category::is_morphism(m) << std::endl;
 
+  // std::cout << function_object_category::object<double,double>::is_element(m) << std::endl;
+  
   return 0;
 }
