@@ -1,29 +1,59 @@
 #include "../Category/CategoryBase.h"
-#include <iostream>
 #include <cmath>
+#include <iostream>
+
+template <typename Obj> void object_test(Obj obj) {
+  std::cout << type_name<Obj>() << std::endl;
+  std::cout << "universal object: " << concepts::is_universal_object(obj)
+            << std::endl;
+  std::cout << "set object:       " << concepts::is_set_object(obj)
+            << std::endl;
+  std::cout << "type object:      " << concepts::is_type_object(obj)
+            << std::endl;
+  std::cout << std::endl;
+}
+
+template <typename Morph> void morphism_test(Morph morph) {
+
+  std::cout << type_name<Morph>() << std::endl;
+  std::cout << "universal moprhism: "
+            << concepts::is_universal_morphism<Morph,
+                                               universal_category> << std::endl;
+  std::cout << "set moprhism: "
+            << concepts::is_set_morphism<Morph, set_category> << std::endl;
+
+  std::cout << "type moprhism: "
+            << concepts::is_type_morphism<Morph, type_category> << std::endl;
+
+  std::cout << std::endl;
+}
 
 int main() {
 
-  constexpr int b = 1;
+  object_test(type_object<float>{});
+  object_test(float{});
 
-  using C = universal_category;
-  std::cout << type_name<C>() << " is category: " << concepts::is_category<C> << std::endl;
+  auto sine   = [](float x) -> float { return sin(x); };
+  auto cosine = [](float x) -> float { return cos(x); };
+  auto um     = universal_morphism<float, float>{};
+  auto sm =
+      set_morphism<type_object<float>, type_object<float>, decltype(sine)>{
+          std::move(sine)};
+  auto tm = type_morphism<float, float, decltype(cosine)>{std::move(cosine)};
 
-  std::cout << is_template_instance_of<std::tuple, std::tuple<int,float,double>> << std::endl;
+  morphism_test(um);
+  morphism_test(sm);
+  morphism_test(tm);
 
-  template_instance<std::tuple, std::tuple<int,float,double>>::get<2> a = 1.2;
+  std::cout << set_product<type_object<float>, type_object<int>>::is_element(
+                   std::tuple{1.23f, 1})
+            << std::endl;
 
-  std::cout << type_name<decltype(a)>() << std::endl;
+  static_assert(type_object<float>::is_element(1.23f) == true, "Error");
+  static_assert(type_object<int>::is_element(1) == true, "Error");
+  static_assert(type_object<std::tuple<float, int>>::is_element(
+                    std::tuple{1.23f, 1}) == true,
+                "Error");
 
-  auto l = [](double x) {return sin(x);};
-
-  auto m = type_category::make_morphism<double,double>(l);
-
-  std::cout << m(3.1415/2) << std::endl;
-
-  std::cout << type_category::is_morphism(m) << std::endl;
-
-  std::cout << function_object_category::object<double,double>::is_element(m) << std::endl;
-  
   return 0;
 }
