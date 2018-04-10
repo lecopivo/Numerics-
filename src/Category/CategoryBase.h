@@ -83,14 +83,7 @@ auto a = hana::type_c<int>;
 struct universal_category {
 
   template <typename Type>
-  struct type_object {
-    using type = Type;
-
-    template <typename T>
-    static constexpr bool is_element(T &&t) {
-      return std::is_same_v<std::remove_reference_t<T>, Type>;
-    }
-  };
+  using type_object = hana::basic_type<Type>;
 
   template <template <typename...> typename T>
   struct template_object {};
@@ -104,12 +97,6 @@ struct universal_category {
   static constexpr bool is_morphism(T const &) {
     return concepts::is_morphism<T>;
   }
-
-  template <typename SourceObj, typename TargetObj>
-  struct morphism {
-    static constexpr auto source() { return SourceObj{}; }
-    static constexpr auto target() { return TargetObj{}; }
-  };
 };
 
 ////////////////////////////////////////////////////////////////////////
@@ -156,11 +143,11 @@ struct type_category {
   //                                                    //
   ////////////////////////////////////////////////////////
 
-  template <typename Fun, typename SourceType, typename TargetType>
+  template <typename SourceType, typename TargetType, typename Fun>
   struct morphism {
-    morphism(Fun &&_fun, object<SourceType>, object<TargetType>)
+    morphism(Fun &&_fun)
         : fun(std::forward<Fun>(_fun)) {
-      using namespace hana::literals;
+
       static_assert(std::is_invocable_r_v<TargetType, Fun, SourceType>,
                     "Invalid arguments"); // type_name<TargetType>() " = "
                                           // type_name< Fun>() "("
@@ -170,6 +157,9 @@ struct type_category {
 
     static constexpr auto source() { return object<SourceType>{}; }
     static constexpr auto target() { return object<TargetType>{}; }
+
+    using source_type = SourceType;
+    using target_type = TargetType;
 
     TargetType operator()(SourceType x) {
       return fun(std::forward<SourceType>(x));
@@ -182,12 +172,17 @@ struct type_category {
   static constexpr bool is_morphism(T const &) {
     if constexpr (concepts::is_morphism<T, type_category>) {
 
-      using SrcType = typename decltype(T::source())::type;
-      using TrgType = typename decltype(T::target())::type;
+      using SrcType = typename T::source_type;
+      using TrgType = typename T::target_type;
 
       return std::is_invocable_r_v<TrgType, T, SrcType>;
     }
     return false;
+  }
+
+  template <typename SourceType, typename TargetType, typename Fun>
+  static auto make_morphism(Fun &&fun) {
+    return morphism<SourceType, TargetType, Fun>{std::forward<Fun>(fun)};
   }
 
   ////////////////////////////////////////////
