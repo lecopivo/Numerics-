@@ -4,11 +4,11 @@
 
 template <typename Obj> void object_test(Obj obj) {
   std::cout << type_name<Obj>() << std::endl;
-  std::cout << "universal object: " << concepts::is_universal_object(obj)
+  std::cout << "universal object: " << concepts::is_universal_object<Obj>
             << std::endl;
-  std::cout << "set object:       " << concepts::is_set_object(obj)
+  std::cout << "set object:       " << concepts::is_set_object<Obj>
             << std::endl;
-  std::cout << "type object:      " << concepts::is_type_object(obj)
+  std::cout << "type object:      " << concepts::is_type_object<Obj>
             << std::endl;
   std::cout << std::endl;
 }
