@@ -87,13 +87,14 @@ namespace concepts {
 //           |__/
 
 template <typename Obj>
-constexpr bool is_universal_object =
-    std::is_trivially_default_constructible_v<Obj>;
+constexpr bool is_universal_object(Obj &&) {
+  // return std::is_trivially_default_constructible_v<Obj>;
+  return true;
+}
 
 template <typename Obj>
-constexpr bool is_set_object = []() {
-
-  if constexpr (is_universal_object<Obj>) {
+constexpr bool is_set_object(Obj &&obj) {
+  if (is_universal_object(obj)) {
 
     auto has__is_element = hana::is_valid(
         [](auto t) -> decltype(decltype(t)::type::is_element(Dummy{})) {});
@@ -104,8 +105,8 @@ constexpr bool is_set_object = []() {
 }();
 
 template <typename Obj>
-constexpr bool is_type_object = []() {
-  if constexpr (is_set_object<Obj>) {
+constexpr bool is_type_object(Obj const &obj) {
+  if (is_set_object(obj)) {
 
     auto has__type = hana::is_valid([](auto t) -> typename decltype(t)::type{});
 
@@ -121,32 +122,31 @@ constexpr bool is_type_object = []() {
 // |_| |_| |_|\___/|_|  | .__/|_| |_|_|___/_| |_| |_|___/
 //                      |_|
 
-template <typename Morph, typename Category>
-constexpr bool is_universal_morphism = []() {
+template <typename Category, typename Morph>
+constexpr bool is_universal_morphism(Morph const &morph) {
 
   auto has__source =
       hana::is_valid([](auto t) -> typename decltype(t)::type::source{});
   auto has__target =
       hana::is_valid([](auto t) -> typename decltype(t)::type::target{});
 
-  if constexpr (has__source(hana::type_c<Morph>) &&
-                has__target(hana::type_c<Morph>)) {
-    return Category::template is_object<typename Morph::source> &&
-           Category::template is_object<typename Morph::target>;
+  if (has__source(hana::type_c<Morph>) && has__target(hana::type_c<Morph>)) {
+    return Category::is_object(Morph::source()) &&
+           Category::is_object(Morph::target());
   }
   return false;
-}();
+};
 
-template <typename Morph, typename Category>
-constexpr bool is_set_morphism = []() {
+template <typename Category, typename Morph>
+constexpr bool is_set_morphism(Morph const &morph) {
 #warning "Not testing for existence of call operator. I do not know how :("
-  return is_universal_morphism<Morph, Category>;
-}();
+  return is_universal_morphism<Category>(morph);
+};
 
-template <typename Morph, typename Category>
-constexpr bool is_type_morphism = []() {
+template <typename Category, typename Morph>
+constexpr bool is_type_morphism(Morph const &morph) {
 
-  if constexpr (is_set_morphism<Morph, Category>) {
+  if (is_set_morphism<Category>(morph)) {
 
     auto has__source_type =
         hana::is_valid([](auto t) -> typename decltype(t)::type::source_type{});
@@ -166,8 +166,7 @@ constexpr bool is_type_morphism = []() {
     };
   }
   return false;
-
-}();
+};
 
 } // namespace concepts
 
@@ -189,8 +188,8 @@ struct set_morphism {
 
   set_morphism(Fun &&_fun)
       : fun(std::forward<Fun>(_fun)) {
-    static_assert(concepts::is_set_object<SourceObj> &&
-                      concepts::is_set_object<TargetObj>,
+    static_assert(concepts::is_set_object(SourceObj{}) &&
+                      concepts::is_set_object(TargetObj{}),
                   "Invalid argument");
   }
 
@@ -239,7 +238,7 @@ struct type_morphism {
   template <typename T>
   decltype(auto) operator()(T &&t) {
 
-    //assert(source().is_element(t));
+    // static_assert(source().is_element(t), "Invalid argument");
 
     return fun(std::forward<T>(t));
   }
@@ -295,20 +294,23 @@ struct universal_category {
     return std::is_trivially_default_constructible_v<Obj>;
   }
 
-  template <typename T>
-  static constexpr bool is_morphism(T const &) {
-    return concepts::is_universal_morphism<T, universal_category>;
+  template <typename Morph>
+  static constexpr bool is_morphism(Morph const &morph) {
+    return concepts::is_universal_morphism<universal_category>(morph);
   }
 };
 
 struct set_category {
 
   template <typename Obj>
-  static constexpr bool is_object = concepts::is_set_object<Obj>;
+  static constexpr bool is_object(Obj const &obj) {
+    return concepts::is_set_object(obj);
+  }
 
   template <typename Morph>
-  static constexpr bool is_morphism =
-      concepts::is_set_morphism<Morph, set_category>;
+  static constexpr bool is_morphism(Morph const &morph) {
+    return concepts::is_set_morphism<set_category>(morph);
+  }
 };
 
 ////////////////////////////////////////////////////////////////////////
@@ -330,11 +332,14 @@ struct type_category {
   using morphism = type_morphism<SourceType, TargetType, Fun>;
 
   template <typename Obj>
-  static constexpr bool is_object = concepts::is_type_object<Obj>;
+  static constexpr bool is_object(Obj const &obj) {
+    return concepts::is_type_object(obj);
+  }
 
   template <typename Morph>
-  static constexpr bool is_morphism =
-      concepts::is_type_morphism<Morph, type_category>;
+  static constexpr bool is_morphism(Morph const &morph) {
+    return concepts::is_type_morphism<type_category>(morph);
+  }
 
   // struct product /* multi_functor_concept */ {
   //   template <int I> using source_category = type_category;
