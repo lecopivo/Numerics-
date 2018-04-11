@@ -6,8 +6,9 @@
 #include <string_view>
 #include <tuple>
 
-template <class T>
-constexpr std::string_view type_name() {
+#include "../Utils/MetaUtils.h"
+
+template <class T> constexpr std::string_view type_name() {
   using namespace std;
 #ifdef __clang__
   string_view p = __PRETTY_FUNCTION__;
@@ -42,25 +43,29 @@ template <template <typename...> typename F, typename... T>
 constexpr bool is_template_instance_of =
     template_instance<F, F<T...>>::is_instance;
 
+template <typename Fun, typename... Args>
+constexpr decltype(auto) my_invoke(Fun &&fun, Args &&... args) {
+  return std::forward<Fun>(fun)(std::forward<Args>(args)...);
+}
+
 template <typename Fun, std::size_t... Is>
-decltype(auto) apply_sequence_to_impl(Fun &&fun, std::index_sequence<Is...>) {
-  return std::invoke(std::forward<Fun>(fun),
-                     std::integral_constant<std::size_t, Is>{}...);
+constexpr decltype(auto) apply_sequence_to_impl(Fun &&fun,
+                                                std::index_sequence<Is...>) {
+  return my_invoke(std::forward<Fun>(fun),
+                   std::integral_constant<std::size_t, Is>{}...);
 }
 
 template <size_t N, typename Fun>
-decltype(auto) apply_sequence_to(Fun &&fun) {
+constexpr decltype(auto) apply_sequence_to(Fun &&fun) {
   return apply_sequence_to_impl(std::forward<Fun>(fun),
                                 std::make_index_sequence<N>{});
 }
 
-template <class T>
-struct remove_cvref {
+template <class T> struct remove_cvref {
   typedef std::remove_cv_t<std::remove_reference_t<T>> type;
 };
 
-template <class T>
-using remove_cvref_t = typename remove_cvref<T>::type;
+template <class T> using remove_cvref_t = typename remove_cvref<T>::type;
 
 using namespace boost;
 
@@ -86,14 +91,12 @@ namespace concepts {
 //  \___/|_.__// |\___|\___|\__|___/
 //           |__/
 
-template <typename Obj>
-constexpr bool is_universal_object(Obj &&) {
-  // return std::is_trivially_default_constructible_v<Obj>;
-  return true;
+template <typename Obj> constexpr bool is_universal_object(Obj const &) {
+  return std::is_trivially_default_constructible_v<Obj>;
+  // return true;
 }
 
-template <typename Obj>
-constexpr bool is_set_object(Obj &&obj) {
+template <typename Obj> constexpr bool is_set_object(Obj const &obj) {
   if (is_universal_object(obj)) {
 
     auto has__is_element = hana::is_valid(
@@ -104,8 +107,7 @@ constexpr bool is_set_object(Obj &&obj) {
   return false;
 };
 
-template <typename Obj>
-constexpr bool is_type_object(Obj const &obj) {
+template <typename Obj> constexpr bool is_type_object(Obj const &obj) {
   if (is_set_object(obj)) {
 
     auto has__type =
@@ -123,7 +125,7 @@ constexpr bool is_type_object(Obj const &obj) {
 // |_| |_| |_|\___/|_|  | .__/|_| |_|_|___/_| |_| |_|___/
 //                      |_|
 
-template <typename Category, typename Morph>
+template <typename Morph>
 constexpr bool is_universal_morphism(Morph const &morph) {
 
   auto has__source =
@@ -132,22 +134,23 @@ constexpr bool is_universal_morphism(Morph const &morph) {
       hana::is_valid([](auto t) -> decltype(decltype(t)::type::target()) {});
 
   if (has__source(hana::type_c<Morph>) && has__target(hana::type_c<Morph>)) {
-    return Category::is_object(Morph::source()) &&
-           Category::is_object(Morph::target());
+    return is_universal_object(Morph::source()) &&
+           is_universal_object(Morph::target());
   }
   return false;
-};
+}
 
-template <typename Category, typename Morph>
-constexpr bool is_set_morphism(Morph const &morph) {
+template <typename Morph> constexpr bool is_set_morphism(Morph const &morph) {
 #warning "Not testing for existence of call operator. I do not know how :("
-  return is_universal_morphism<Category>(morph);
-};
+  if constexpr (is_universal_morphism(morph)) {
+    return is_set_object(morph.source()) && is_set_object(morph.target());
+  };
+  return false;
+}
 
-template <typename Category, typename Morph>
-constexpr bool is_type_morphism(Morph const &morph) {
+template <typename Morph> constexpr bool is_type_morphism(Morph const &morph) {
 
-  if (is_set_morphism<Category>(morph)) {
+  if (is_set_morphism(morph)) {
 
     auto has__source_type =
         hana::is_valid([](auto t) -> typename decltype(t)::type::source_type{});
@@ -167,12 +170,36 @@ constexpr bool is_type_morphism(Morph const &morph) {
     };
   }
   return false;
-};
+}
 
 } // namespace concepts
 
-template <typename SourceObj, typename TargetObj>
-struct universal_morphism {
+template <typename ObjX, typename ObjY>
+constexpr bool is_same_object(ObjX const &objX, ObjY const &objY) {
+  return std::is_same_v<ObjX, ObjY>;
+}
+
+template <typename... Morphs> constexpr bool are_composable(Morphs const &...) {
+
+  return apply_sequence_to<sizeof...(Morphs) - 1>([](auto... Is) constexpr {
+    using Numerics::Utils::pack_get_type;
+    return (is_same_object(pack_get_type<Is, Morphs...>::target(),
+                           pack_get_type<Is + 1, Morphs...>::source()) &&
+            ...);
+  });
+}
+
+template <typename Type> struct type_object {
+  using type = Type;
+
+  template <typename Element> static constexpr bool is_element(Element &&e) {
+#warning                                                                       \
+    "This is not good, it should keep atleast const, reference probably too."
+    return std::is_same_v<remove_cvref_t<Element>, Type>;
+  }
+};
+
+template <typename SourceObj, typename TargetObj> struct universal_morphism {
 
   universal_morphism() {
     static_assert(concepts::is_universal_object(SourceObj{}) &&
@@ -185,20 +212,18 @@ struct universal_morphism {
 };
 
 template <typename SourceObj, typename TargetObj, typename Fun>
-struct set_morphism {
+struct set_morphism : public universal_morphism<SourceObj, TargetObj> {
 
-  set_morphism(Fun &&_fun)
-      : fun(std::forward<Fun>(_fun)) {
+  set_morphism(Fun _fun)
+      : universal_morphism<SourceObj, TargetObj>{},
+        fun(std::move(_fun)) {
+
     static_assert(concepts::is_set_object(SourceObj{}) &&
                       concepts::is_set_object(TargetObj{}),
                   "Invalid argument");
   }
 
-  static constexpr auto source() { return SourceObj{}; }
-  static constexpr auto target() { return TargetObj{}; }
-
-  template <typename T>
-  decltype(auto) operator()(T &&t) {
+  template <typename T> decltype(auto) operator()(T &&t) {
 
     static_assert(SourceObj::is_element(t), "Invalid argument");
 
@@ -209,47 +234,92 @@ private:
   Fun fun;
 };
 
-template <typename Type>
-struct type_object {
-  using type = Type;
+template <typename SourceObj, typename TargetObj, typename Fun>
+struct type_morphism : set_morphism<SourceObj, TargetObj, Fun> {
 
-  template <typename Element>
-  static constexpr bool is_element(Element &&e) {
-#warning                                                                       \
-    "This is not good, it should keep atleast const, reference probably too."
-    return std::is_same_v<remove_cvref_t<Element>, Type>;
+  using source_type = typename SourceObj::type;
+  using target_type = typename TargetObj::type;
+
+  type_morphism(Fun _fun)
+      : set_morphism<SourceObj, TargetObj, Fun>(std::move(_fun)) {
+    static_assert(std::is_invocable_r_v<target_type, Fun, source_type>,
+                  "Invalid argument");
   }
 };
 
-template <typename SourceType, typename TargetType, typename Fun>
-struct type_morphism {
+template <typename... Morphs> struct composed_morphism {
+protected:
+  static constexpr int N = sizeof...(Morphs);
+  template <std::size_t I>
+  using Morph = Numerics::Utils::pack_get_type<I, Morphs...>;
 
-  type_morphism(Fun &&_fun)
-      : fun(std::forward<Fun>(_fun)) {
-    static_assert(std::is_invocable_r_v<TargetType, Fun, SourceType>,
-                  "Invalid argument");
+  std::tuple<Morphs...> morphs;
+
+public:
+  composed_morphism(Morphs... m) : morphs{std::move(m)...} {
+    static_assert(are_composable(m...), "Morphisms are not composable!");
   }
 
-  static constexpr auto source() { return type_object<SourceType>{}; }
-  static constexpr auto target() { return type_object<TargetType>{}; }
+  static constexpr auto source() { return Morph<0>::source(); }
+  static constexpr auto target() { return Morph<N - 1>::target(); }
+};
 
-  using source_type = SourceType;
-  using target_type = TargetType;
+template <typename... Morphs>
+struct composed_universal_morphism : public composed_morphism<Morphs...> {
+protected:
+  using Base = composed_morphism<Morphs...>;
 
-  template <typename T>
-  decltype(auto) operator()(T &&t) {
+public:
+  composed_universal_morphism(Morphs... m) : Base{std::move(m)...} {
+    static_assert((concepts::is_universal_morphism(m) && ...),
+                  "Arguments are not universal morphisms!");
+  }
+};
+
+template <typename... Morphs>
+struct composed_set_morphism : public composed_universal_morphism<Morphs...> {
+protected:
+  using Base = composed_universal_morphism<Morphs...>;
+
+public:
+  composed_set_morphism(Morphs... m) : Base{std::move(m)...} {
+    static_assert((concepts::is_set_morphism(m) && ...),
+                  "Arguments are not set morphisms!");
+  }
+
+  template <typename T> decltype(auto) operator()(T &&t) {
 
     // static_assert(source().is_element(t), "Invalid argument");
 
-    return fun(std::forward<T>(t));
+    return eval<0>(std::forward<T>(t));
   }
 
 private:
-  Fun fun;
+  template <int I, typename T> decltype(auto) eval(T &&t) {
+    if constexpr (I == (Base::Base::N - 1)) {
+      return std::get<I>(Base::Base::morphs)(std::forward<T>(t));
+    } else {
+      return eval<I + 1>(std::get<I>(Base::Base::morphs)(std::forward<T>(t)));
+    }
+  }
 };
 
-template <typename... Objs>
-struct set_product {
+template <typename... Morphs>
+struct composed_type_morphism : public composed_set_morphism<Morphs...> {
+protected:
+  using Base = composed_set_morphism<Morphs...>;
+
+public:
+  composed_type_morphism(Morphs... m) : Base{std::move(m)...} {
+    static_assert((is_type_morphism(m) && ...),
+                  "Arguments are not set morphisms!");
+  }
+
+  using source_type = typename decltype(Base::Base::Base::source())::type;
+  using target_type = typename decltype(Base::Base::Base::target())::type;
+};
+
+template <typename... Objs> struct set_product {
 
   template <typename ProdElement>
   static constexpr bool is_element(ProdElement const &e) {
@@ -287,30 +357,50 @@ struct set_product {
  */
 struct universal_category {
 
-  template <template <typename...> typename T>
-  struct template_object {};
+  template <template <typename...> typename T> struct template_object {};
 
-  template <typename Obj>
-  static constexpr bool is_object(Obj const &) {
+  template <typename Obj> static constexpr bool is_object(Obj const &) {
     return std::is_trivially_default_constructible_v<Obj>;
   }
 
   template <typename Morph>
   static constexpr bool is_morphism(Morph const &morph) {
-    return concepts::is_universal_morphism<universal_category>(morph);
+    return concepts::is_universal_morphism(morph);
+  }
+
+  template <typename... Morphs> struct composed_morphism {
+  private:
+    template <std::size_t I>
+    using Morph            = Numerics::Utils::pack_get_type<I, Morphs...>;
+    static constexpr int N = sizeof...(Morphs);
+
+  public:
+    composed_morphism(Morphs... m) : morphs{std::move(m)...} {
+      static_assert(are_composable(m...), "Morphisms are not composable!");
+    }
+
+    static constexpr auto source() { return Morph<0>::source(); };
+    static constexpr auto target() { return Morph<N - 1>::target(); };
+
+    std::tuple<Morphs...> morphs;
+  };
+
+  template <typename... Morphs>
+  static constexpr auto compose(Morphs &&... morphs) {
+    return composed_morphism<std::remove_reference_t<Morphs>...>{
+        std::forward<Morphs>(morphs)...};
   }
 };
 
 struct set_category {
 
-  template <typename Obj>
-  static constexpr bool is_object(Obj const &obj) {
+  template <typename Obj> static constexpr bool is_object(Obj const &obj) {
     return concepts::is_set_object(obj);
   }
 
   template <typename Morph>
   static constexpr bool is_morphism(Morph const &morph) {
-    return concepts::is_set_morphism<set_category>(morph);
+    return concepts::is_set_morphism(morph);
   }
 };
 
@@ -326,20 +416,18 @@ struct set_category {
 
 struct type_category {
 
-  template <typename Type>
-  using object = type_object<Type>;
+  template <typename Type> using object = type_object<Type>;
 
   template <typename SourceType, typename TargetType, typename Fun>
   using morphism = type_morphism<SourceType, TargetType, Fun>;
 
-  template <typename Obj>
-  static constexpr bool is_object(Obj const &obj) {
+  template <typename Obj> static constexpr bool is_object(Obj const &obj) {
     return concepts::is_type_object(obj);
   }
 
   template <typename Morph>
   static constexpr bool is_morphism(Morph const &morph) {
-    return concepts::is_type_morphism<type_category>(morph);
+    return concepts::is_type_morphism(morph);
   }
 
   // struct product /* multi_functor_concept */ {

@@ -2,8 +2,7 @@
 #include <cmath>
 #include <iostream>
 
-template <typename Obj>
-void object_test(Obj obj) {
+template <typename Obj> void object_test(Obj obj) {
   std::cout << type_name<Obj>() << std::endl;
 
   std::cout << "universal object: " << universal_category::is_object(obj)
@@ -15,17 +14,16 @@ void object_test(Obj obj) {
   std::cout << std::endl;
 }
 
-template <typename Morph>
-void morphism_test(Morph morph) {
+template <typename Morph> void morphism_test(Morph morph) {
 
   std::cout << type_name<Morph>() << std::endl;
-  std::cout << "universal moprhism: "
-            << universal_category::is_morphism(morph) << std::endl;
-  std::cout << "set moprhism: "
-            << set_category::is_morphism(morph) << std::endl;
+  std::cout << "universal moprhism: " << universal_category::is_morphism(morph)
+            << std::endl;
+  std::cout << "set moprhism: " << set_category::is_morphism(morph)
+            << std::endl;
 
-  std::cout << "type moprhism: "
-            << type_category::is_morphism(morph) << std::endl;
+  std::cout << "type moprhism: " << type_category::is_morphism(morph)
+            << std::endl;
 
   std::cout << std::endl;
 }
@@ -46,14 +44,29 @@ int main() {
   auto sine   = [](float x) -> float { return sin(x); };
   auto cosine = [](float x) -> float { return cos(x); };
   auto um     = universal_morphism<float, float>{};
-  auto sm =
+  auto sine_m =
       set_morphism<type_object<float>, type_object<float>, decltype(sine)>{
-          std::move(sine)};
-  auto tm = type_morphism<float, float, decltype(cosine)>{std::move(cosine)};
+          sine};
+  auto cos_m =
+      type_morphism<type_object<float>, type_object<float>, decltype(cosine)>{
+          cosine};
 
   morphism_test(um);
-  morphism_test(sm);
-  morphism_test(tm);
+  morphism_test(sine_m);
+  morphism_test(cos_m);
+
+  auto um1 = universal_morphism<float, int>{};
+  auto um2 = universal_morphism<int, double>{};
+  auto um3 = universal_morphism<double, int>{};
+
+  auto cum = composed_universal_morphism{um1, um2, um3};
+  morphism_test(cum);
+
+  auto csm = composed_set_morphism(sine_m, cos_m);
+
+  auto o = csm(1.0f);
+  
+  std::cout << type_name<decltype(o)>() << " "<<  o << std::endl;
 
   // std::cout << set_product<type_object<float>, type_object<int>>::is_element(
   //                  std::tuple{1.23f, 1})
