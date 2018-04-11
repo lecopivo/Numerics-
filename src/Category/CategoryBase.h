@@ -88,8 +88,7 @@ namespace concepts {
 
 template <typename Obj>
 constexpr bool is_universal_object(Obj &&) {
-  // return std::is_trivially_default_constructible_v<Obj>;
-  return true;
+  return std::is_trivially_default_constructible_v<Obj>;
 }
 
 template <typename Obj>
@@ -102,7 +101,7 @@ constexpr bool is_set_object(Obj &&obj) {
     return bool{has__is_element(hana::type_c<Obj>)};
   }
   return false;
-}();
+};
 
 template <typename Obj>
 constexpr bool is_type_object(Obj const &obj) {
@@ -113,7 +112,7 @@ constexpr bool is_type_object(Obj const &obj) {
     return bool{has__type(hana::type_c<Obj>)};
   }
   return false;
-}();
+};
 
 //                             _     _
 //  _ __ ___   ___  _ __ _ __ | |__ (_)___ _ __ ___  ___
