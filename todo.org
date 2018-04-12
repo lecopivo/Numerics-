@@ -21,8 +21,10 @@
 
 * Category part
 
-** TODO morphism composition
+** DONE morphism composition
+   CLOSED: [2018-04-12 Thu 16:43]
 
-** TODO equality check for objects in category
+** DONE equality check for objects in category
+   CLOSED: [2018-04-12 Thu 16:43]
 
 ** TODO identity morphism
