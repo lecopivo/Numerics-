@@ -2,7 +2,8 @@
 #include <cmath>
 #include <iostream>
 
-template <typename Obj> void object_test(Obj obj) {
+template <typename Obj>
+void object_test(Obj obj) {
   std::cout << type_name<Obj>() << std::endl;
 
   std::cout << "universal object: " << universal_category::is_object(obj)
@@ -14,11 +15,13 @@ template <typename Obj> void object_test(Obj obj) {
   std::cout << std::endl;
 }
 
-template <typename Morph> void morphism_test(Morph morph) {
+template <typename Morph>
+void morphism_test(Morph morph) {
 
   std::cout << type_name<Morph>() << std::endl;
   std::cout << "universal moprhism: " << universal_category::is_morphism(morph)
             << std::endl;
+
   std::cout << "set moprhism: " << set_category::is_morphism(morph)
             << std::endl;
 
@@ -51,6 +54,8 @@ int main() {
       type_morphism<type_object<float>, type_object<float>, decltype(cosine)>{
           cosine};
 
+  concepts::is_set_morphism(float{});
+
   morphism_test(um);
   morphism_test(sine_m);
   morphism_test(cos_m);
@@ -62,11 +67,11 @@ int main() {
   auto cum = composed_universal_morphism{um1, um2, um3};
   morphism_test(cum);
 
-  auto csm = composed_set_morphism(sine_m, cos_m);
+  auto csm = composed_type_morphism(cos_m, cos_m, cos_m);
+  auto o   = csm(1.0f);
 
-  auto o = csm(1.0f);
-  
-  std::cout << type_name<decltype(o)>() << " "<<  o << std::endl;
+  std::cout << type_name<decltype(o)>() << " " << o << " "
+            << cos(cos(cos(1.0f))) << std::endl;
 
   // std::cout << set_product<type_object<float>, type_object<int>>::is_element(
   //                  std::tuple{1.23f, 1})
